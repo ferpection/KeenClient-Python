@@ -17,7 +17,7 @@ Use pip to install!
 
     pip install keen
 
-This client is known to work on Python 2.7, 3.4, 3.5 and 3.6.
+This client is known to work on Python 2.7, 3.5, 3.6, 3.7 and 3.8.
 
 For versions of Python < 2.7.9, you’ll need to install pyasn1, ndg-httpsclient, pyOpenSSL.
 
@@ -406,6 +406,85 @@ You can manage your `saved queries <https://keen.io/docs/api/?shell#saved-querie
     # Delete a saved query (use the new resource name since we just changed it)
     client.saved_queries.delete("cached-query-name")
 
+Cached Datasets
+'''''''''''''''
+.. code-block:: python
+
+    # Create your KeenClient
+    from keen.client import KeenClient
+
+    client = KeenClient(
+        project_id="xxxx",  # your project ID
+        read_key="zzzz",
+        master_key="abcd" 
+    )
+
+    # Create a Cached Dataset
+    dataset_name = "NEW_DATASET"
+    display_name = "My new dataset"
+    query = {
+        "project_id": "PROJECT ID",
+        "analysis_type": "count",
+        "event_collection": "purchases",
+        "filters": [
+            {
+                "property_name": "price",
+                "operator": "gte",
+                "property_value": 100
+            }
+        ],
+        "timeframe": "this_500_days",
+        "timezone": None,
+        "interval": "daily",
+        "group_by": ["ip_geo_info.country"]
+    }
+    index_by = "product.id"
+    client.cached_datasets.create(
+        dataset_name,
+        query,
+        index_by,
+        display_name
+    )
+
+    # Get all Cached Datasets
+    client.cached_datasets.all()
+
+    # Get one Cached Dataset
+    client.cached_datasets.get(dataset_name)
+
+    # Retrieve Cached Dataset results
+    index_by = "a_project_id"
+    timeframe ="this_2_hours"
+    client.cached_datasets.results(
+        dataset_name,
+        index_by,
+        timeframe
+    )
+
+    # Using an absolute timeframe
+    timeframe = {
+        "start": "2018-11-02T00:00:00.000Z",
+        "end": "2018-11-02T02:00:00.000Z"
+    }
+    client.cached_datasets.results(
+        dataset_name,
+        index_by,
+        timeframe
+    )
+
+    # Using multiple index_by values
+    index_by = {
+        "project.id": "a_project_id",
+        "project.foo": "bar"
+    }
+    client.cached_datasets.results(
+        "dataset_with_multiple_indexes",
+        index_by,
+        timeframe
+    )
+
+    # Delete a Cached Dataset
+    client.cached_datasets.delete(dataset_name)
 
 Overwriting event timestamps
 ''''''''''''''''''''''''''''
@@ -488,45 +567,48 @@ The Python client enables the creation and manipulation of `Access Keys <https:/
     )
 
     # Create an access key. See: https://keen.io/docs/access/access-keys/#customizing-your-access-key
-    client.create_access_key(name="Dave_Barry_Key", is_enabled=True, permitted=["writes", "cached_queries"],
+    client.create_access_key(name="Dave_Barry_Key", is_active=True, permitted=["writes", "cached_queries"],
                              options={"cached_queries": {"allowed": ["dave_barry_in_cyberspace_sales"]}})
 
     # Display all access keys associated with this client's project.
     client.list_access_keys()
 
     # Get details on a particular access key.
-    client.get_access_key(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    client.get_access_key(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     # Revoke (disable) an access key.
-    client.revoke_access_key(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    client.revoke_access_key(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     # Unrevoke (re-enable) an access key.
-    client.unrevoke_access_key(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    client.unrevoke_access_key(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    # Delete an access key
+    client.delete_access_key(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     # Change just the name of an access key.
-    client.update_access_key_name(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", name="Some_New_Name")
+    client.update_access_key_name(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", name="Some_New_Name")
 
     # Add new access key permissions to existing permissions on a given key.
     # In this case the set of permissions currently contains "writes" and "cached_queries".
     # This function call keeps the old permissions and adds "queries" to that set.
     #     ("writes", "cached_queries") + ("queries") = ("writes", "cached_queries", "queries")
-    client.add_access_key_permissions(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["queries"])
+    client.add_access_key_permissions(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["queries"])
 
     # Remove one or more access key permissions from a given key.
     # In this case the set of permissions currently contains "writes", "cached_queries", and "queries".
     # This function call will keep the old permissions not explicitly removed here.
     # So we will remove both "writes" and "queries" from the set, leaving only "cached_queries".
     #     ("writes", "cached_queries", "queries") - ("writes", "queries") = ("cached_queries")
-    client.remove_access_key_permissions(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["writes", "queries"])
+    client.remove_access_key_permissions(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["writes", "queries"])
 
     # We can also perform a full update on the permissions, replacing all existing permissions with a new list.
     # In this case our existing permissions contains only "cached_queries".
     # We will replace this set with the "writes" permission with this function call.
     #     ("cached_queries") REPLACE-WITH ("writes") = ("writes")
-    client.update_access_key_permissions(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["writes"])
+    client.update_access_key_permissions(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", permissions=["writes"])
 
     # Replace all existing key options with this new options object.
-    client.update_access_key_options(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", options={"writes": {
+    client.update_access_key_options(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", options={"writes": {
         "autofill": {
             "customer": {
                 "id": "93iskds39kd93id",
@@ -538,11 +620,11 @@ The Python client enables the creation and manipulation of `Access Keys <https:/
     # Replace everything but the key ID with what is supplied here.
     # If a field is not supplied here, it will be set to a blank value.
     # In this case, no options are supplied, so all options will be removed.
-    client.update_access_key_full(access_key_id="ABCDEFGHIJKLMNOPQRSTUVWXYZ", name="Strong_Bad", is_active=True, permitted=["queries"])
+    client.update_access_key_full(key="ABCDEFGHIJKLMNOPQRSTUVWXYZ", name="Strong_Bad", is_active=True, permitted=["queries"])
 
 
 Create Scoped Keys (**Deprecated**)
-''''''''''''''''''
+'''''''''''''''''''''''''''''''''''
 
 The Python client enables you to create `Scoped Keys <https://keen.io/docs/security/#scoped-key>`_ easily, but Access Keys are better! 
 If you need to use them anyway, for legacy reasons, here's how:
@@ -573,7 +655,7 @@ To run tests:
 Changelog
 ---------
 
-This project is in alpha stage at version 0.5.1 . See the full CHANGELOG `here <./CHANGELOG.rst>`_.
+This project is in alpha stage at version 0.6.1. See the full `CHANGELOG <./CHANGELOG.rst>`_.
 
 
 Questions & Support
